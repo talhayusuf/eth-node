@@ -34,16 +34,19 @@ gethImage=$GETH_IMAGE
 nethermindImage=$NETHERMIND_IMAGE
 mevBoostImage=$MEV_BOOST_IMAGE
 
-mkdir $dataDir && mkdir $dataDir/lodestar && mkdir $dataDir/geth && mkdir $dataDir/nethermind && mkdir $dataDir/ethereumjs && mkdir $dataDir/besu && mkdir $dataDir/erigon && mkdir $dataDir/mevboost
+mkdir $dataDir && mkdir $dataDir/lodestar && mkdir $dataDir/geth && mkdir $dataDir/ethereumjs && mkdir $dataDir/mevboost
 
 if [ -n "$configGitDir" ]
 then
   if [ ! -n "$(ls -A $dataDir/$configGitDir)" ]
   then
-    cd $dataDir && git init && git remote add -f origin $setupConfigUrl && git config core.sparseCheckout true && echo "$configGitDir/*" >> .git/info/sparse-checkout && git pull --depth=1 origin $setupBranch && cd $currentDir
+    cd $dataDir && git init && git remote add -f origin $setupConfigUrl && git config core.sparseCheckout true && echo "$configGitDir/*" >> 
+.git/info/sparse-checkout && git pull --depth=1 origin $setupBranch && cd $currentDir
   fi;
 
-  if [ ! -n "$(ls -A $dataDir/$configGitDir)" ] || [ ! -n "$(ls -A $dataDir/$configGitDir/genesis.ssz)" ] || ( [ ! -n "$(ls -A $dataDir/$configGitDir/el_bootnode.txt)" ] && [ ! -n "$(ls -A $dataDir/$configGitDir/bootnodes.txt)" ] ) || ( [ ! -n "$(ls -A $dataDir/$configGitDir/bootstrap_nodes.txt)" ] && [ ! -n "$(ls -A $dataDir/$configGitDir/boot_enr.yaml)" ] )
+  if [ ! -n "$(ls -A $dataDir/$configGitDir)" ] || [ ! -n "$(ls -A $dataDir/$configGitDir/genesis.ssz)" ] || ( [ ! -n "$(ls -A 
+$dataDir/$configGitDir/el_bootnode.txt)" ] && [ ! -n "$(ls -A $dataDir/$configGitDir/bootnodes.txt)" ] ) || ( [ ! -n "$(ls -A 
+$dataDir/$configGitDir/bootstrap_nodes.txt)" ] && [ ! -n "$(ls -A $dataDir/$configGitDir/boot_enr.yaml)" ] )
   then
     echo "Configuration directory not setup properly, remove the data directory and run again."
     echo "exiting ..."
@@ -131,18 +134,9 @@ then
     if [ "$elClient" == "geth" ]
     then
       $dockerExec pull $GETH_IMAGE
-    elif [ "$elClient" == "nethermind" ]
-    then
-      $dockerExec pull $NETHERMIND_IMAGE
     elif [ "$elClient" == "ethereumjs" ]
     then
       $dockerExec pull $ETHEREUMJS_IMAGE
-    elif [ "$elClient" == "besu" ]
-    then
-      $dockerExec pull $BESU_IMAGE
-    elif [ "$elClient" == "erigon" ]
-    then
-      $dockerExec pull $ERIGON_IMAGE
     fi;
   fi;
 
@@ -171,7 +165,8 @@ then
   if [ ! -n "$(ls -A $dataDir/geth)" ] && [ -n "$configGitDir" ]
   then 
     echo "setting up geth directory"
-    $dockerExec run --rm -v $currentDir/$dataDir/$configGitDir:/config -v $currentDir/$dataDir/geth:/data $GETH_IMAGE --datadir /data init /config/genesis.json
+    $dockerExec run --rm -v $currentDir/$dataDir/$configGitDir:/config -v $currentDir/$dataDir/geth:/data $GETH_IMAGE --datadir /data init 
+/config/genesis.json
   fi;
 
   elCmd="$dockerCmd --name $elName $elDockerNetwork -v $currentDir/$dataDir:/data $GETH_IMAGE $GETH_EXTRA_ARGS"
@@ -179,26 +174,6 @@ then
   then
     elCmd="$elCmd --bootnodes $EXTRA_BOOTNODES$bootNode"
   fi;
-
-elif [ "$elClient" == "nethermind" ] 
-then
-  echo "nethermindImage: $NETHERMIND_IMAGE"
-
-  if [ -n "$configGitDir" ] && [ ! -n "$(ls -A $dataDir/$configGitDir/nethermind_genesis.json)" ]
-  then
-    echo "nethermind genesis file not found in config, exiting... "
-    exit;
-  fi;
-
-  elName="$DEVNET_NAME-nethermind"
-  elCmd="$dockerCmd --name $elName $elDockerNetwork -v $currentDir/$dataDir:/data"
-  if [ -n "$configGitDir" ]
-  then
-    elCmd="$elCmd -v $currentDir/$dataDir/$configGitDir:/config  $NETHERMIND_IMAGE --Init.ChainSpecPath=/config/nethermind_genesis.json --Discovery.Bootnodes $EXTRA_BOOTNODES$bootNode"
-  else
-    elCmd="$elCmd $NETHERMIND_IMAGE"
-  fi;
-  elCmd="$elCmd $NETHERMIND_EXTRA_ARGS"
 
 elif [ "$elClient" == "ethereumjs" ] 
 then
@@ -220,46 +195,6 @@ then
   fi;
   elCmd="$elCmd $ETHEREUMJS_EXTRA_ARGS "
 
-elif [ "$elClient" == "besu" ] 
-then
-  echo "besuImage: $BESU_IMAGE"
-
-  if [ -n "$configGitDir" ] && [ ! -n "$(ls -A $dataDir/$configGitDir/besu_genesis.json)" ]
-  then
-    echo "besu genesis file not found in config, exiting... "
-    exit;
-  fi;
-
-  elName="$DEVNET_NAME-besu"
-  elCmd="$dockerCmd --name $elName $elDockerNetwork -v $currentDir/$dataDir:/data"
-  if [ -n "$configGitDir" ]
-  then
-    elCmd="$elCmd -v $currentDir/$dataDir/$configGitDir:/config  $BESU_IMAGE --genesis-file=/config/besu_genesis.json --bootnodes=$EXTRA_BOOTNODES$bootNode"
-  else
-    elCmd="$elCmd $BESU_IMAGE"
-  fi;
-  elCmd="$elCmd $BESU_EXTRA_ARGS"
-elif [ "$elClient" == "erigon" ] 
-then
-  echo "erigonImage: $ERIGON_IMAGE"
-
-  if [ -n "$configGitDir" ] && [ ! -n "$(ls -A $dataDir/$configGitDir/erigon_genesis.json)" ]
-  then
-    echo "erigon genesis file not found in config, exiting... "
-    exit;
-  fi;
-
-  elName="$DEVNET_NAME-erigon"
-  elCmd="$dockerCmd --name $elName $elDockerNetwork -v $currentDir/$dataDir:/data"
-  if [ -n "$configGitDir" ]
-  then
-    elCmd="$elCmd -v $currentDir/$dataDir/$configGitDir:/config  $ERIGON_IMAGE --bootnodes=$EXTRA_BOOTNODES$bootNode"
-  else
-    elCmd="$elCmd $ERIGON_IMAGE"
-  fi;
-  elCmd="$elCmd $ERIGON_EXTRA_ARGS"
-fi
-
 echo "lodestarImage: $LODESTAR_IMAGE"
 
 if [ $platform == 'Darwin' ]
@@ -274,7 +209,8 @@ clCmd="$dockerCmd --name $clName $clDockerNetwork -v $currentDir/$dataDir:/data"
 # mount and use config
 if [ -n "$configGitDir" ]
 then
-  clCmd="$clCmd -v $currentDir/$dataDir/$configGitDir:/config $LODESTAR_IMAGE beacon --paramsFile /config/config.yaml --genesisStateFile /config/genesis.ssz --eth1.depositContractDeployBlock $depositContractDeployBlock --bootnodesFile /config/boot_enr.yaml"
+  clCmd="$clCmd -v $currentDir/$dataDir/$configGitDir:/config $LODESTAR_IMAGE beacon --paramsFile /config/config.yaml --genesisStateFile /config/genesis.ssz 
+--eth1.depositContractDeployBlock $depositContractDeployBlock --bootnodesFile /config/boot_enr.yaml"
 else
   clCmd="$clCmd $LODESTAR_IMAGE beacon"
 fi;
@@ -431,7 +367,8 @@ cleanup() {
 
 trap "echo exit signal recived;cleanup" SIGINT SIGTERM
 
-if [ ! -n "$detached" ] && [ -n "$elPid" ] && [ -n "$clPid" ] && ([ ! -n "$withValidator" ] || [ -n "$valPid" ] ) && ([ ! -n "$withMevBoost" ] || [ -n "$mevPid" ])
+if [ ! -n "$detached" ] && [ -n "$elPid" ] && [ -n "$clPid" ] && ([ ! -n "$withValidator" ] || [ -n "$valPid" ] ) && ([ ! -n "$withMevBoost" ] || [ -n 
+"$mevPid" ])
 then 
 	echo "launched terminals for $terminalInfo"
 	echo "you can watch observe the client logs at the respective terminals"
